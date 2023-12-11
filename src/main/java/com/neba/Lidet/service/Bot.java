@@ -165,25 +165,38 @@ dateStep= 2;
 
         return day >= 1 && day <= Month.of(month).maxLength();
     }
-    @Scheduled(fixedRate = 20000)
-    public void sendBirthdayReminders() {
+
+    @Scheduled(fixedRate = 24 * 60 * 60 * 1000)
+    public void happyBirthday() {
+        LocalDate today = LocalDate.now();
         List<BirthDay> allBirthdays = birthDayRepository.findAll();
-
-        for (BirthDay birthday : allBirthdays) {
-
-            String reminderMessage = "Happy Birthday, " + birthday.getName() + "! 🎉";
-
-            sendTextMessage(birthday.getChatId(), reminderMessage);
+        Map<Long, List<BirthDay>> birthdaysByChatId = allBirthdays.stream()
+                .collect(Collectors.groupingBy(BirthDay::getChatId));
+        for (Map.Entry<Long, List<BirthDay>> entry : birthdaysByChatId.entrySet()) {
+            Long chatId = entry.getKey();
+            List<BirthDay> userBirthdays = entry.getValue();
+            for (BirthDay birthday : userBirthdays) {
+                if (isBirthdayToday(birthday.getBirthdayDate())) {
+                    String happyBirthdayMessage = "Say Happy Birthday to " + birthday.getName() + "!";
+                    sendTextMessage(chatId, happyBirthdayMessage);
+                }
+            }
         }
     }
 
-    @Scheduled(cron = "*/10 * * * * *")
-    public void sendBirthdayReminders1() {
-        LocalDate today = LocalDate.now();
-        LocalDate start = today.minusDays(7);
-        LocalDate end = today.plusDays(7);
-        System.out.println("Executing sendBirthdayGreetings method...");
 
+
+    private boolean isBirthdayToday(LocalDate birthday) {
+        LocalDate today = LocalDate.now();
+        return today.getMonth() == birthday.getMonth() && today.getDayOfMonth() == birthday.getDayOfMonth();
+    }
+
+
+    @Scheduled(fixedRate = 24 * 60 * 60 * 1000)
+    public void sendBirthdayReminders() {
+        LocalDate today = LocalDate.now();
+        LocalDate start = today;
+        LocalDate end = today.plusDays(2);
         List<BirthDay> allBirthdays = birthDayRepository.findAll();
 
         Map<Long, List<BirthDay>> birthdaysByChatId = allBirthdays.stream()
@@ -198,10 +211,8 @@ dateStep= 2;
                     int age = calculateAge(birthday.getBirthdayDate().getYear(), today.getYear());
                     int dayLeft = birthday.getBirthdayDate().getDayOfMonth() - today.getDayOfMonth();
 
-                    String reminderMessage = "Reminder: " + birthday.getName() + "'s birthday is in  " + dayLeft + " days "
+                    String reminderMessage = "Reminder: " + birthday.getName() + "'s birthday is with in  " + dayLeft + " days "
                             + " days left " + dayLeft + " They will be " + age + " years old.";
-                    log.info(reminderMessage);
-                    System.out.println(" this is the reminder message " + reminderMessage);
 
                     sendTextMessage(chatId, reminderMessage);
                 }
@@ -211,24 +222,13 @@ dateStep= 2;
 
 
 
+
     private boolean isWithinDateRangeIgnoringYear(LocalDate date, LocalDate start, LocalDate end) {
         int monthDay = date.getDayOfYear();
         int startMonthDay = start.getDayOfYear();
         int endMonthDay = end.getDayOfYear();
 
         return monthDay >= startMonthDay && monthDay <= endMonthDay;
-    }
-
-
-
-    private boolean isWithinDateRange(LocalDate date, LocalDate start, LocalDate end) {
-        return !date.isBefore(start) && !date.isAfter(end);
-    }
-
-
-    private boolean isBirthdayToday(LocalDate birthday, LocalDate today) {
-        return birthday.getMonthValue() == today.getMonthValue()
-                && birthday.getDayOfMonth() == today.getDayOfMonth();
     }
 
 
