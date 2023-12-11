@@ -10,6 +10,8 @@ import java.time.LocalDate;
 @Entity(name = "birthdays")
 @Data
 @Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class BirthDay {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
