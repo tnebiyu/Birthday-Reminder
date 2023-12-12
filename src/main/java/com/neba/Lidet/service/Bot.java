@@ -3,13 +3,10 @@ import com.neba.Lidet.model.BirthDay;
 import com.neba.Lidet.repository.BirthDayRepository;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
@@ -23,7 +20,7 @@ import java.util.stream.Collectors;
 
 
 @Component
-@Slf4j
+
 @AllArgsConstructor
 @NoArgsConstructor
 public  class Bot extends TelegramLongPollingBot {
@@ -69,7 +66,15 @@ public  class Bot extends TelegramLongPollingBot {
                 temporaryMonth = "";
 
                 sendTextMessage(chatId, " Welcome to the Birthday Reminder Bot! Please enter your friend's name.");
-            } else if (temporaryName != null) {
+            }
+            if (messageText.equals("/restart")){
+                temporaryName = "";
+                dateStep = 0;
+                temporaryYear = "";
+                temporaryMonth = "";
+                sendTextMessage(chatId, "please enter your friend's name again");
+            }
+            else if (temporaryName != null) {
                 if (dateStep == 0) {
 
                     temporaryName = messageText;
@@ -89,8 +94,6 @@ public  class Bot extends TelegramLongPollingBot {
                             sendTextMessage(chatId, " noted " + temporaryYear + " Please enter a month (1-12) of your  friend");
 dateStep= 2;
 
-
-
                 }
 
                 else if (dateStep == 2) {
@@ -106,8 +109,6 @@ dateStep= 2;
 
                     if (validateDate(year, month, day)) {
                         LocalDate birthdayDate = LocalDate.of(year, month, day);
-                        System.out.println("this is birthday " + birthdayDate);
-                        System.out.println("year: " + year + " month: " + month + " day: " + day);
                         BirthDay newBirthDay = BirthDay.builder()
                                 .birthdayDate(birthdayDate)
                                 .chatId(chatId)
@@ -119,13 +120,13 @@ dateStep= 2;
                         sendTextMessage(chatId, " noted " + birthdayDate + " Friend's name and birthday saved!");
 
 
-                        temporaryName = null;
-                        temporaryYear = null;
-                        temporaryMonth = null;
+                        temporaryName = "";
+                        temporaryYear = "";
+                        temporaryMonth = "";
 
                         dateStep = 0;
                     } else {
-                        sendTextMessage(chatId, " Please enter a valid date.");
+                        sendTextMessage(chatId, " Please enter a valid date. by first entering /restart");
                     }
                 }
             }
@@ -140,7 +141,8 @@ dateStep= 2;
         try {
             execute(sendMessage);
         } catch (TelegramApiException e) {
-            log.error("Error sending message", e);
+            sendTextMessage(chatId, " An error occurred while saving the birthday.");
+
         }
     }
 
@@ -154,7 +156,7 @@ dateStep= 2;
 
             birthDayRepository.save(birthDay);
         } catch (Exception e) {
-            log.error("Error saving birthday", e);
+
             sendTextMessage(birthDay.getChatId(), " An error occurred while saving the birthday.");
         }
     }
@@ -185,7 +187,7 @@ dateStep= 2;
             for (BirthDay birthday : userBirthdays) {
                 if (isBirthdayToday(birthday.getBirthdayDate())) {
                     int age = calculateAge(birthday.getBirthdayDate().getYear(), today.getYear());
-                    String happyBirthdayMessage = "🎉🎉🎉 Say Happy Birthday to " + birthday.getName() + " He/she will be " + age + " years old. 🎉";
+                    String happyBirthdayMessage = "🎉🎉🎉 Say Happy Birthday to " + birthday.getName() + " They will be " + age + " years old. 🎉";
 
                     sendTextMessage(chatId, happyBirthdayMessage);
 
