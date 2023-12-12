@@ -2,12 +2,14 @@ package com.neba.Lidet.service;
 import com.neba.Lidet.model.BirthDay;
 import com.neba.Lidet.repository.BirthDayRepository;
 import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Bean;
-import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
+
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
@@ -23,10 +25,15 @@ import java.util.stream.Collectors;
 @Component
 @Slf4j
 @AllArgsConstructor
+@NoArgsConstructor
 public  class Bot extends TelegramLongPollingBot {
+@Autowired
+    private  BirthDayRepository birthDayRepository;
+    @Value("${BOT_NAME}")
+    private String botUsername;
 
-    private final BirthDayRepository birthDayRepository;
-
+    @Value("${BOT_TOKEN}")
+    private String botToken;
 
 
 
@@ -177,8 +184,11 @@ dateStep= 2;
             List<BirthDay> userBirthdays = entry.getValue();
             for (BirthDay birthday : userBirthdays) {
                 if (isBirthdayToday(birthday.getBirthdayDate())) {
-                    String happyBirthdayMessage = "Say Happy Birthday to " + birthday.getName() + "!";
+                    int age = calculateAge(birthday.getBirthdayDate().getYear(), today.getYear());
+                    String happyBirthdayMessage = "🎉🎉🎉 Say Happy Birthday to " + birthday.getName() + " He/she will be " + age + " years old. 🎉";
+
                     sendTextMessage(chatId, happyBirthdayMessage);
+
                 }
             }
         }
@@ -211,8 +221,9 @@ dateStep= 2;
                     int age = calculateAge(birthday.getBirthdayDate().getYear(), today.getYear());
                     int dayLeft = birthday.getBirthdayDate().getDayOfMonth() - today.getDayOfMonth();
 
-                    String reminderMessage = "Reminder: " + birthday.getName() + "'s birthday is with in  " + dayLeft + " days "
-                            + " days left " + dayLeft + " They will be " + age + " years old.";
+                    String reminderMessage = "Reminder: " + birthday.getName().toUpperCase() + "'s birthday is within " + dayLeft + " days. "
+                            + dayLeft + " days left. They will be " + age + " years old. 🎉🎉🎉";
+
 
                     sendTextMessage(chatId, reminderMessage);
                 }

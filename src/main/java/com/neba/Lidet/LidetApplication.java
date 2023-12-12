@@ -3,6 +3,7 @@ package com.neba.Lidet;
 import com.neba.Lidet.repository.BirthDayRepository;
 import com.neba.Lidet.service.Bot;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationContext;
@@ -17,29 +18,19 @@ import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 @EnableScheduling
 public class LidetApplication {
 
+
 	public static void main(String[] args) {
 
 		try {
 			ApplicationContext context = SpringApplication.run(LidetApplication.class, args);
-
-
-			BirthDayRepository birthDayRepository = context.getBean(BirthDayRepository.class);
-			Bot bot = context.getBean(Bot.class);
-
+//			BirthDayRepository birthDayRepository = context.getBean(BirthDayRepository.class);
+//			Bot bot = context.getBean(Bot.class);
 
 
 
+Bot bot1 = new Bot();
 
 
-			String temporaryMonth = "";
-			String temporaryYear = "";
-			int dateStep = 0;
-			String temporaryName = "";
-
-
-
-
-			Bot bot1 = new Bot(birthDayRepository );
 
 
 			TelegramBotsApi telegramBotsApi = new TelegramBotsApi(DefaultBotSession.class);
