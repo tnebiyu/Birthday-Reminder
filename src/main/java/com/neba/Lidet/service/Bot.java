@@ -1,14 +1,11 @@
 package com.neba.Lidet.service;
 import com.neba.Lidet.model.BirthDay;
 import com.neba.Lidet.repository.BirthDayRepository;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import java.time.LocalDate;
@@ -20,19 +17,23 @@ import java.util.stream.Collectors;
 
 
 @Component
-
-@AllArgsConstructor
-@NoArgsConstructor
 public  class Bot extends TelegramLongPollingBot {
-@Autowired
-    private  BirthDayRepository birthDayRepository;
-    @Value("${BOT_NAME}")
-    private String botUsername;
 
-    @Value("${BOT_TOKEN}")
-    private String botToken;
+    private final BirthDayRepository birthDayRepository;
+    private int dateStep;
+    private  String temporaryName;
+   private String temporaryYear;
+   private String temporaryMonth;
 
 
+
+ public Bot(BirthDayRepository birthDayRepository){
+     this.birthDayRepository = birthDayRepository;
+     dateStep = 0;
+     temporaryName = "";
+     temporaryYear = "";
+     temporaryMonth = "";
+ }
 
 
 
@@ -44,68 +45,68 @@ public  class Bot extends TelegramLongPollingBot {
     @Override
     public String getBotToken() {
 
-        return "6614558388:AAHd26qrd74GgItDH2IS_d7_Zq3ltr93LtU";
+        return "6614558388:AAEH5dJd4o-oBJsl1PshdIbi4nug-M_fXa4";
     }
 
     @Override
     public void onUpdateReceived(Update update) {
-        long chatId = update.getMessage().getChatId();
-        String temporaryName = "";
 
-        int dateStep = 0;
-        String temporaryYear = "";
-        String temporaryMonth = "";
         if (update.hasMessage() && update.getMessage().hasText()) {
+            Message message = update.getMessage();
 
-            String messageText = update.getMessage().getText();
+            String messageText = message.getText();
+            long chatId = message.getChatId();
 
             if (messageText.equals("/start")) {
-                temporaryName = "";
-                dateStep = 0;
-                temporaryYear = "";
-                temporaryMonth = "";
+
+
 
                 sendTextMessage(chatId, " Welcome to the Birthday Reminder Bot! Please enter your friend's name.");
             }
-            if (messageText.equals("/restart")){
-                temporaryName = "";
-                dateStep = 0;
-                temporaryYear = "";
-                temporaryMonth = "";
-                sendTextMessage(chatId, "please enter your friend's name again");
-            }
+
+
             else if (temporaryName != null) {
+
                 if (dateStep == 0) {
+
 
                     temporaryName = messageText;
 
+
                     sendTextMessage(chatId, " noted " + temporaryName + " Please enter the year (YYYY) of your friend's birthday.");
 
-                        dateStep = 1;
 
 
+                    dateStep = 1;
 
 
-                } else if (dateStep == 1) {
-                    temporaryYear = messageText;
-
-
-                            int month = Integer.parseInt(messageText);
-                            sendTextMessage(chatId, " noted " + temporaryYear + " Please enter a month (1-12) of your  friend");
-dateStep= 2;
 
                 }
+
+                else if (dateStep == 1) {
+
+                    temporaryYear = messageText;
+
+                    sendTextMessage(chatId, " noted " + temporaryYear + " Please enter a month (1-12) of your friend");
+
+                    dateStep = 2;
+
+
+                }
+
 
                 else if (dateStep == 2) {
 
                     temporaryMonth = messageText;
-                    sendTextMessage(chatId, " noted " + temporaryMonth + " Please enter the day (1-31) of your friend's birthday.");
-                            dateStep = 3;
 
+                    sendTextMessage(chatId, " noted " + temporaryMonth + " Please enter the day (1-31) of your friend's birthday.");
+                   dateStep =3;
                 } else if (dateStep == 3) {
+
                     int year = Integer.parseInt(temporaryYear);
                     int month = Integer.parseInt(temporaryMonth);
                     int day = Integer.parseInt(messageText);
+
 
                     if (validateDate(year, month, day)) {
                         LocalDate birthdayDate = LocalDate.of(year, month, day);
@@ -120,9 +121,7 @@ dateStep= 2;
                         sendTextMessage(chatId, " noted " + birthdayDate + " Friend's name and birthday saved!");
 
 
-                        temporaryName = "";
-                        temporaryYear = "";
-                        temporaryMonth = "";
+
 
                         dateStep = 0;
                     } else {
@@ -187,7 +186,7 @@ dateStep= 2;
             for (BirthDay birthday : userBirthdays) {
                 if (isBirthdayToday(birthday.getBirthdayDate())) {
                     int age = calculateAge(birthday.getBirthdayDate().getYear(), today.getYear());
-                    String happyBirthdayMessage = "🎉🎉🎉 Say Happy Birthday to " + birthday.getName() + " They will be " + age + " years old. 🎉";
+                    String happyBirthdayMessage = "🎉🎉🎉 Say Happy Birthday to " + birthday.getName() + " He/She will be " + age + " years old. 🎉";
 
                     sendTextMessage(chatId, happyBirthdayMessage);
 
@@ -207,7 +206,6 @@ dateStep= 2;
     @Scheduled(fixedRate = 24 * 60 * 60 * 1000)
     public void sendBirthdayReminders() {
         LocalDate today = LocalDate.now();
-        LocalDate start = today;
         LocalDate end = today.plusDays(2);
         List<BirthDay> allBirthdays = birthDayRepository.findAll();
 
@@ -219,12 +217,12 @@ dateStep= 2;
             List<BirthDay> userBirthdays = entry.getValue();
 
             for (BirthDay birthday : userBirthdays) {
-                if (isWithinDateRangeIgnoringYear(birthday.getBirthdayDate(), start, end)) {
+                if (isWithinDateRangeIgnoringYear(birthday.getBirthdayDate(), today, end)) {
                     int age = calculateAge(birthday.getBirthdayDate().getYear(), today.getYear());
                     int dayLeft = birthday.getBirthdayDate().getDayOfMonth() - today.getDayOfMonth();
 
                     String reminderMessage = "Reminder: " + birthday.getName().toUpperCase() + "'s birthday is within " + dayLeft + " days. "
-                            + dayLeft + " days left. They will be " + age + " years old. 🎉🎉🎉";
+                            + dayLeft + " days left. He/She will be " + age + " years old. 🎉🎉🎉";
 
 
                     sendTextMessage(chatId, reminderMessage);
