@@ -27,7 +27,6 @@ public class LidetApplication {
 			TelegramBotsApi telegramBotsApi = new TelegramBotsApi(DefaultBotSession.class);
 			telegramBotsApi.registerBot(bot1);
 
-			System.out.println("Bot started successfully");
 		} catch (TelegramApiException e) {
 			e.printStackTrace();
 		}

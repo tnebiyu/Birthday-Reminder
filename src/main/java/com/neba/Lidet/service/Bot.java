@@ -15,7 +15,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-
 @Component
 public  class Bot extends TelegramLongPollingBot {
 
@@ -25,8 +24,6 @@ public  class Bot extends TelegramLongPollingBot {
    private String temporaryYear;
    private String temporaryMonth;
 
-
-
  public Bot(BirthDayRepository birthDayRepository){
      this.birthDayRepository = birthDayRepository;
      dateStep = 0;
@@ -34,9 +31,6 @@ public  class Bot extends TelegramLongPollingBot {
      temporaryYear = "";
      temporaryMonth = "";
  }
-
-
-
     @Override
     public String getBotUsername() {
 
@@ -53,48 +47,24 @@ public  class Bot extends TelegramLongPollingBot {
 
         if (update.hasMessage() && update.getMessage().hasText()) {
             Message message = update.getMessage();
-
             String messageText = message.getText();
             long chatId = message.getChatId();
-
             if (messageText.equals("/start")) {
-
-
-
                 sendTextMessage(chatId, " Welcome to the Birthday Reminder Bot! Please enter your friend's name.");
             }
-
-
             else if (temporaryName != null) {
 
                 if (dateStep == 0) {
-
-
                     temporaryName = messageText;
-
-
                     sendTextMessage(chatId, " noted " + temporaryName + " Please enter the year (YYYY) of your friend's birthday.");
-
-
-
                     dateStep = 1;
-
-
-
                 }
-
                 else if (dateStep == 1) {
-
                     temporaryYear = messageText;
-
                     sendTextMessage(chatId, " noted " + temporaryYear + " Please enter a month (1-12) of your friend");
 
                     dateStep = 2;
-
-
                 }
-
-
                 else if (dateStep == 2) {
 
                     temporaryMonth = messageText;
@@ -106,26 +76,22 @@ public  class Bot extends TelegramLongPollingBot {
                     int year = Integer.parseInt(temporaryYear);
                     int month = Integer.parseInt(temporaryMonth);
                     int day = Integer.parseInt(messageText);
-
-
                     if (validateDate(year, month, day)) {
                         LocalDate birthdayDate = LocalDate.of(year, month, day);
                         BirthDay newBirthDay = BirthDay.builder()
                                 .birthdayDate(birthdayDate)
                                 .chatId(chatId)
                                 .name(temporaryName).build();
-
                         saveBirthday(newBirthDay);
-
-
                         sendTextMessage(chatId, " noted " + birthdayDate + " Friend's name and birthday saved!");
-
-
-
-
+                        sendBirthdayReminders();
+                        happyBirthday();
+                        temporaryName = "";
+                        temporaryYear = "";
+                        temporaryMonth = "";
                         dateStep = 0;
                     } else {
-                        sendTextMessage(chatId, " Please enter a valid date. by first entering /restart");
+                        sendTextMessage(chatId, " Please enter a valid date. by first entering /start");
                     }
                 }
             }
@@ -133,8 +99,6 @@ public  class Bot extends TelegramLongPollingBot {
 
 
     }
-
-
     public void sendTextMessage(long chatId, String message) {
         SendMessage sendMessage = new SendMessage(String.valueOf(chatId), message);
         try {
@@ -144,7 +108,6 @@ public  class Bot extends TelegramLongPollingBot {
 
         }
     }
-
     public void saveBirthday(BirthDay birthDay) {
         try {
             Optional<BirthDay> birthDayFind = birthDayRepository.findByName(birthDay.getName());
@@ -154,14 +117,12 @@ public  class Bot extends TelegramLongPollingBot {
             }
 
             birthDayRepository.save(birthDay);
+
         } catch (Exception e) {
 
             sendTextMessage(birthDay.getChatId(), " An error occurred while saving the birthday.");
         }
     }
-
-
-
     private boolean validateDate(int year, int month, int day) {
         if (year < 1900 || year > LocalDate.now().getYear()) {
             return false;
@@ -194,15 +155,10 @@ public  class Bot extends TelegramLongPollingBot {
             }
         }
     }
-
-
-
     private boolean isBirthdayToday(LocalDate birthday) {
         LocalDate today = LocalDate.now();
         return today.getMonth() == birthday.getMonth() && today.getDayOfMonth() == birthday.getDayOfMonth();
     }
-
-
     @Scheduled(fixedRate = 24 * 60 * 60 * 1000)
     public void sendBirthdayReminders() {
         LocalDate today = LocalDate.now();
@@ -211,11 +167,9 @@ public  class Bot extends TelegramLongPollingBot {
 
         Map<Long, List<BirthDay>> birthdaysByChatId = allBirthdays.stream()
                 .collect(Collectors.groupingBy(BirthDay::getChatId));
-
         for (Map.Entry<Long, List<BirthDay>> entry : birthdaysByChatId.entrySet()) {
             Long chatId = entry.getKey();
             List<BirthDay> userBirthdays = entry.getValue();
-
             for (BirthDay birthday : userBirthdays) {
                 if (isWithinDateRangeIgnoringYear(birthday.getBirthdayDate(), today, end)) {
                     int age = calculateAge(birthday.getBirthdayDate().getYear(), today.getYear());
@@ -230,10 +184,6 @@ public  class Bot extends TelegramLongPollingBot {
             }
         }
     }
-
-
-
-
     private boolean isWithinDateRangeIgnoringYear(LocalDate date, LocalDate start, LocalDate end) {
         int monthDay = date.getDayOfYear();
         int startMonthDay = start.getDayOfYear();
@@ -241,9 +191,6 @@ public  class Bot extends TelegramLongPollingBot {
 
         return monthDay >= startMonthDay && monthDay <= endMonthDay;
     }
-
-
-
     private int calculateAge(int birthYear, int currentYear){
         return currentYear - birthYear;
     }
